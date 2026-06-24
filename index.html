@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Quote Calculator</title>
+<style>
+  :root{
+    --navy:#13294b;
+    --navy-dark:#0c1c33;
+    --sun:#f5a623;
+    --sun-dark:#d4880f;
+    --paper:#fbf9f4;
+    --line:#dcd5c4;
+    --ink:#1f2430;
+    --ink-soft:#5b6172;
+    --good:#1f7a4d;
+    --card:#ffffff;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Arial,Helvetica,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  header{
+    background:var(--navy);
+    color:#fff;
+    padding:22px 24px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    border-bottom:4px solid var(--sun);
+  }
+  header .sun-icon{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--sun);
+    box-shadow:0 0 0 6px rgba(245,166,35,0.18);
+    flex-shrink:0;
+  }
+  header h1{
+    font-size:1.3rem;
+    margin:0;
+    letter-spacing:.2px;
+  }
+  header p{
+    margin:2px 0 0;
+    font-size:.85rem;
+    color:#c9d3e3;
+  }
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:24px 20px 80px;
+  }
+  .system-select{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-bottom:24px;
+  }
+  @media (max-width:760px){
+    .system-select{grid-template-columns:repeat(2,1fr);}
+  }
+  .sys-btn{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, transform .1s;
+    font-weight:600;
+    color:var(--navy);
+  }
+  .sys-btn:hover{transform:translateY(-2px);}
+  .sys-btn.active{
+    border-color:var(--sun);
+    background:#fff8ec;
+    box-shadow:0 2px 10px rgba(245,166,35,0.25);
+  }
+  .sys-btn .size{font-size:1.05rem;}
+  .sys-btn .panels{display:block;font-size:.75rem;color:var(--ink-soft);font-weight:400;margin-top:2px;}
+
+  .layout{
+    display:grid;
+    grid-template-columns:1fr 340px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  table.lines{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  }
+  table.lines thead th{
+    background:var(--navy);
+    color:#fff;
+    text-align:left;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:10px 12px;
+    font-weight:600;
+  }
+  table.lines th.num, table.lines td.num{text-align:right;}
+  table.lines tbody tr{border-bottom:1px solid var(--line);}
+  table.lines tbody tr:last-child{border-bottom:none;}
+  table.lines td{
+    padding:12px;
+    font-size:.88rem;
+    vertical-align:middle;
+  }
+  .item-name{font-weight:600;color:var(--navy);}
+  .item-code{
+    display:inline-block;
+    font-size:.65rem;
+    color:var(--ink-soft);
+    background:#eef1f6;
+    border-radius:4px;
+    padding:1px 6px;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+  .item-sub{display:block;font-size:.75rem;color:var(--ink-soft);margin-top:2px;font-weight:400;}
+
+  input[type=number], select{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:.88rem;
+    font-family:inherit;
+    background:#fff;
+  }
+  input[type=number]:focus, select:focus{
+    outline:none;
+    border-color:var(--sun-dark);
+    box-shadow:0 0 0 3px rgba(245,166,35,0.15);
+  }
+  .cost-input{width:100px;}
+  .markup-input{width:55px;text-align:right;}
+  .qty-input{width:56px;text-align:right;}
+  .manual-qty-input{width:56px;text-align:right;}
+  .pct-row{display:flex;align-items:center;gap:4px;}
+  .pct-row span{font-size:.85rem;color:var(--ink-soft);}
+
+  .line-total{font-weight:700;color:var(--navy);font-size:.92rem;white-space:nowrap;}
+  .auto-tag{
+    font-size:.65rem;
+    color:var(--good);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+
+  .summary{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    padding:18px;
+    position:sticky;
+    top:20px;
+  }
+  .summary h2{
+    font-size:.95rem;
+    margin:0 0 12px;
+    color:var(--navy);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:.88rem;
+    padding:7px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .summary-row.total{
+    border-bottom:none;
+    border-top:2px solid var(--navy);
+    margin-top:6px;
+    padding-top:12px;
+    font-size:1.25rem;
+    font-weight:800;
+    color:var(--navy);
+  }
+  .summary-row .lbl{color:var(--ink-soft);}
+  .summary-row.total .lbl{color:var(--navy);font-weight:700;font-size:.95rem;}
+
+  .global-markup{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:.85rem;
+  }
+  .global-markup label{display:block;margin-bottom:6px;color:var(--ink-soft);font-weight:600;}
+  .global-markup .row{display:flex;gap:8px;}
+  .global-markup input{flex:1;}
+  .apply-btn{
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:7px 12px;
+    font-size:.8rem;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .apply-btn:hover{background:var(--navy-dark);}
+
+  .print-btn{
+    margin-top:14px;
+    width:100%;
+    background:var(--sun);
+    color:var(--navy-dark);
+    border:none;
+    border-radius:6px;
+    padding:11px;
+    font-weight:700;
+    font-size:.9rem;
+    cursor:pointer;
+  }
+  .print-btn:hover{background:var(--sun-dark);color:#fff;}
+
+  .note{
+    font-size:.72rem;
+    color:var(--ink-soft);
+    margin-top:10px;
+    line-height:1.4;
+  }
+
+  .customer-block{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    padding:16px 18px;
+    margin-bottom:18px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+  }
+  @media (max-width:700px){.customer-block{grid-template-columns:1fr;}}
+  .customer-block input{font-size:.9rem;}
+  .customer-block label{font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;}
+
+  @media print{
+    header{background:#fff !important;color:var(--navy);border-bottom:3px solid var(--navy);}
+    header .sun-icon{box-shadow:none;}
+    header p{color:var(--ink-soft);}
+    .system-select, .print-btn, .global-markup, th.markupcol, td.markupcol{display:none !important;}
+    .layout{grid-template-columns:1fr;}
+    .summary{position:static;box-shadow:none;border:1px solid var(--line);}
+    body{background:#fff;}
+    table.lines, .customer-block{box-shadow:none;border:1px solid var(--line);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sun-icon"></div>
+  <div>
+    <h1>Solar Installation Quote Calculator</h1>
+    <p>Internal pricing tool — fill in system size and costs to generate a quote</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="customer-block">
+    <div>
+      <label>Customer name</label>
+      <input type="text" id="custName" placeholder="e.g. J. Naidoo">
+    </div>
+    <div>
+      <label>Site address</label>
+      <input type="text" id="custAddress" placeholder="e.g. 12 Smith St, Durban">
+    </div>
+    <div>
+      <label>Quote date</label>
+      <input type="date" id="custDate">
+    </div>
+  </div>
+
+  <div class="system-select" id="systemSelect">
+    <div class="sys-btn" data-size="5kW" data-panels="8">
+      <div class="size">5 kW</div>
+      <span class="panels">8 Panels</span>
+    </div>
+    <div class="sys-btn" data-size="8kW" data-panels="12">
+      <div class="size">8 kW</div>
+      <span class="panels">12 Panels</span>
+    </div>
+    <div class="sys-btn" data-size="12kW" data-panels="16">
+      <div class="size">12 kW</div>
+      <span class="panels">16 Panels</span>
+    </div>
+    <div class="sys-btn" data-size="16kW" data-panels="22">
+      <div class="size">16 kW</div>
+      <span class="panels">22 Panels</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <table class="lines">
+        <thead>
+          <tr>
+            <th style="width:30%">Item</th>
+            <th style="width:14%">Details</th>
+            <th class="num">Unit Cost</th>
+            <th class="num">Qty</th>
+            <th class="num markupcol">Markup %</th>
+            <th class="num">Sell Price</th>
+          </tr>
+        </thead>
+        <tbody id="lineBody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+      <p class="note">
+        Base Cost cells in grey are auto-filled from your standard pricing guide and can be overridden if needed.
+        Items marked "Manual" need a fresh supplier quote — enter the <strong>unit cost</strong> and <strong>quantity</strong>, and this calculator applies your markup automatically. Modules quantity auto-fills from the selected system size's panel count, but you can type over it.
+      </p>
+    </div>
+
+    <div class="summary">
+      <h2>Quote Summary</h2>
+      <div class="summary-row"><span class="lbl">Total base cost</span><span id="sumBase">R 0.00</span></div>
+      <div class="summary-row"><span class="lbl">Total markup</span><span id="sumMarkup">R 0.00</span></div>
+      <div class="summary-row total"><span class="lbl">Quote total (excl. VAT)</span><span id="sumTotal">R 0.00</span></div>
+      <div class="summary-row"><span class="lbl">VAT (15%)</span><span id="sumVat">R 0.00</span></div>
+      <div class="summary-row total"><span class="lbl">Total incl. VAT</span><span id="sumGrand">R 0.00</span></div>
+
+      <div class="global-markup">
+        <label>Apply markup % to all "Manual" items at once</label>
+        <div class="row">
+          <input type="number" id="bulkMarkup" placeholder="e.g. 18" min="0" max="100" step="0.5">
+          <button class="apply-btn" onclick="applyBulkMarkup()">Apply</button>
+        </div>
+      </div>
+
+      <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Pricing guide data (from internal pricing sheet) ----
+const SIZES = ["5kW","8kW","12kW","16kW"];
+const SIZE_LABELS = {"5kW":"5 kW (8 Panels)","8kW":"8 kW (12 Panels)","12kW":"12 kW (16 Panels)","16kW":"16 kW (22 Panels)"};
+
+// Flat-rate items that vary by system size
+const FLAT_ITEMS = [
+  { code:"GEN",   name:"AC & DC Cabling, Fuses and Parts", prices:{ "5kW":5250, "8kW":6895, "12kW":8550, "16kW":13990 } },
+  { code:"GEN02", name:"AC Switchgear and Surge",          prices:{ "5kW":3250, "8kW":3980, "12kW":4335, "16kW":5560  } },
+  { code:"INST",  name:"Solar Installation & Commissioning", prices:{ "5kW":6800, "8kW":10500, "12kW":12800, "16kW":17600 } },
+  { code:"INST1", name:"AC Installation, Splitting DB and COC", prices:{ "5kW":4890, "8kW":6800, "12kW":8250, "16kW":10500 } },
+  { code:"SUN",   name:"Sundries",                          prices:{ "5kW":1250, "8kW":1500, "12kW":1800, "16kW":2350  } }
+];
+
+// Manual-quote items (need supplier price + markup each time)
+const MANUAL_ITEMS = [
+  { code:"INV", name:"Inverter", note:"Get supplier quote, add 15–20% markup", defaultMarkup:18, defaultQty:1, qtyAuto:false },
+  { code:"BAT", name:"Batteries", note:"Get supplier quote, add markup", defaultMarkup:18, defaultQty:1, qtyAuto:false },
+  { code:"PV",  name:"Modules (Panels)", note:"Get supplier quote, add markup, per panel", defaultMarkup:18, defaultQty:8, qtyAuto:true }
+];
+
+// Per-panel mounting structure pricing
+const MOUNT_RATES = { "Tile": 825, "Alu": 515, "Ballast": 1335 };
+
+// DC switchgear by string count
+const DC_STRING_RATES = { "2": 3345, "3": 4225, "4": 6450 };
+
+// Travel
+const TRAVEL_RATE = 4.80; // per km
+
+let currentSize = "5kW";
+let currentPanels = 8;
+
+function rand(){ return Math.random().toString(36).slice(2,9); }
+
+function fmt(n){
+  if(isNaN(n)) n = 0;
+  return "R " + n.toLocaleString('en-ZA', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function buildRows(){
+  const body = document.getElementById('lineBody');
+  body.innerHTML = "";
+
+  // Manual items (Inverter, Batteries, Modules)
+  MANUAL_ITEMS.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.dataset.code = item.code;
+    tr.innerHTML = `
+      <td><span class="item-name">${item.name}</span><span class="item-code">${item.code}</span><span class="item-sub">${item.note} · <span style="color:#d4880f;font-weight:600;">Manual</span></span></td>
+      <td>—</td>
+      <td class="num"><input type="number" class="cost-input base-input" min="0" step="1" placeholder="0.00" data-role="base"></td>
+      <td class="num"><input type="number" class="manual-qty-input" value="${item.defaultQty}" min="0" step="1" data-role="qty" data-autoqty="${item.qtyAuto ? '1':'0'}"></td>
+      <td class="num markupcol"><div class="pct-row" style="justify-content:flex-end;"><input type="number" class="markup-input" value="${item.defaultMarkup}" min="0" max="100" step="0.5" data-role="markup"><span>%</span></div></td>
+      <td class="num line-total" data-role="total">R 0.00</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  // Mounting structure (per-panel, type selectable)
+  {
+    const tr = document.createElement('tr');
+    tr.dataset.code = "FRM";
+    tr.innerHTML = `
+      <td><span class="item-name">Mounting Structure</span><span class="item-code">FRM</span><span class="item-sub">Tile = R825/panel · Alu = R515/panel · Ballast = R1335/panel</span></td>
+      <td>
+        <select data-role="mounttype" style="margin-bottom:6px;">
+          <option value="Tile">Tile</option>
+          <option value="Alu">Alu</option>
+          <option value="Ballast">Ballast</option>
+        </select>
+        <input type="number" class="qty-input" data-role="panelqty" min="0" step="1" placeholder="Panels" style="width:100%;">
+      </td>
+      <td class="num"><span class="auto-tag">Auto</span><div class="line-total" data-role="basedisp">R 0.00</div></td>
+      <td class="num">—</td>
+      <td class="num markupcol">—</td>
+      <td class="num line-total" data-role="total">R 0.00</td>
+    `;
+    body.appendChild(tr);
+  }
+
+  // Flat rate items
+  FLAT_ITEMS.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.dataset.code = item.code;
+    tr.dataset.flat = "1";
+    tr.innerHTML = `
+      <td><span class="item-name">${item.name}</span><span class="item-code">${item.code}</span></td>
+      <td><span class="auto-tag">Auto-filled</span></td>
+      <td class="num"><span class="auto-tag">Auto</span><div class="line-total" data-role="basedisp">R 0.00</div></td>
+      <td class="num">—</td>
+      <td class="num markupcol">—</td>
+      <td class="num line-total" data-role="total">R 0.00</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  // DC Switchgear and Surge (string count selectable)
+  {
+    const tr = document.createElement('tr');
+    tr.dataset.code = "GEN01";
+    tr.innerHTML = `
+      <td><span class="item-name">DC Switchgear and Surge</span><span class="item-code">GEN01</span><span class="item-sub">2 Strings = R3345 · 3 Strings = R4225 · 4 Strings = R6450</span></td>
+      <td>
+        <select data-role="strings">
+          <option value="2">2 Strings</option>
+          <option value="3">3 Strings</option>
+          <option value="4">4 Strings</option>
+        </select>
+      </td>
+      <td class="num"><span class="auto-tag">Auto</span><div class="line-total" data-role="basedisp">R 0.00</div></td>
+      <td class="num">—</td>
+      <td class="num markupcol">—</td>
+      <td class="num line-total" data-role="total">R 0.00</td>
+    `;
+    body.appendChild(tr);
+  }
+
+  // Travel
+  {
+    const tr = document.createElement('tr');
+    tr.dataset.code = "DEL";
+    tr.innerHTML = `
+      <td><span class="item-name">Travel</span><span class="item-code">DEL</span><span class="item-sub">Rate per km, editable</span></td>
+      <td><input type="number" class="qty-input" data-role="km" min="0" step="1" placeholder="km" style="width:100%;"></td>
+      <td class="num"><input type="number" class="cost-input" data-role="rate" min="0" step="0.10" value="${TRAVEL_RATE}" style="width:100px;"></td>
+      <td class="num">—</td>
+      <td class="num markupcol">—</td>
+      <td class="num line-total" data-role="total">R 0.00</td>
+    `;
+    body.appendChild(tr);
+  }
+
+  body.querySelectorAll('input, select').forEach(el=>{
+    el.addEventListener('input', recalc);
+    el.addEventListener('change', recalc);
+  });
+
+  const pvQty = body.querySelector('tr[data-code="PV"] [data-role="qty"]');
+  if(pvQty){
+    pvQty.addEventListener('input', ()=>{ pvQty.dataset.userEdited = "1"; });
+  }
+  const panelQty = body.querySelector('tr[data-code="FRM"] [data-role="panelqty"]');
+  if(panelQty){
+    panelQty.addEventListener('input', ()=>{ panelQty.dataset.auto = "0"; });
+  }
+}
+
+function selectSize(size, panels){
+  currentSize = size;
+  currentPanels = panels;
+  document.querySelectorAll('.sys-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.size === size);
+  });
+  // pre-fill panel qty field if user hasn't typed a custom value
+  const panelInput = document.querySelector('tr[data-code="FRM"] [data-role="panelqty"]');
+  if(panelInput && (panelInput.value === "" || panelInput.dataset.auto === "1")){
+    panelInput.value = panels;
+    panelInput.dataset.auto = "1";
+  }
+  // pre-fill Modules (PV) quantity from panel count, same auto-override rule
+  const pvQtyInput = document.querySelector('tr[data-code="PV"] [data-role="qty"]');
+  if(pvQtyInput && pvQtyInput.dataset.autoqty === "1" && (pvQtyInput.value === "" || pvQtyInput.dataset.userEdited !== "1")){
+    pvQtyInput.value = panels;
+  }
+  recalc();
+}
+
+function recalc(){
+  let totalBase = 0, totalMarkup = 0;
+
+  // Manual items
+  document.querySelectorAll('tr').forEach(tr=>{
+    const code = tr.dataset.code;
+    if(!code) return;
+    const manual = MANUAL_ITEMS.find(m=>m.code===code);
+    if(manual){
+      const baseInput = tr.querySelector('[data-role="base"]');
+      const qtyInput = tr.querySelector('[data-role="qty"]');
+      const markupInput = tr.querySelector('[data-role="markup"]');
+      const unitCost = parseFloat(baseInput.value) || 0;
+      const qty = parseFloat(qtyInput.value) || 0;
+      const markupPct = parseFloat(markupInput.value) || 0;
+      const base = unitCost * qty;
+      const markupAmt = base * (markupPct/100);
+      const total = base + markupAmt;
+      tr.querySelector('[data-role="total"]').textContent = fmt(total);
+      totalBase += base;
+      totalMarkup += markupAmt;
+      return;
+    }
+
+    if(code === "FRM"){
+      const type = tr.querySelector('[data-role="mounttype"]').value;
+      const qty = parseFloat(tr.querySelector('[data-role="panelqty"]').value) || 0;
+      const rate = MOUNT_RATES[type] || 0;
+      const base = rate * qty;
+      tr.querySelector('[data-role="basedisp"]').textContent = fmt(base);
+      tr.querySelector('[data-role="total"]').textContent = fmt(base);
+      totalBase += base;
+      return;
+    }
+
+    if(code === "GEN01"){
+      const strings = tr.querySelector('[data-role="strings"]').value;
+      const base = DC_STRING_RATES[strings] || 0;
+      tr.querySelector('[data-role="basedisp"]').textContent = fmt(base);
+      tr.querySelector('[data-role="total"]').textContent = fmt(base);
+      totalBase += base;
+      return;
+    }
+
+    if(code === "DEL"){
+      const km = parseFloat(tr.querySelector('[data-role="km"]').value) || 0;
+      const rate = parseFloat(tr.querySelector('[data-role="rate"]').value) || 0;
+      const base = km * rate;
+      tr.querySelector('[data-role="total"]').textContent = fmt(base);
+      totalBase += base;
+      return;
+    }
+
+    if(tr.dataset.flat === "1"){
+      const item = FLAT_ITEMS.find(f=>f.code===code);
+      const base = item.prices[currentSize] || 0;
+      tr.querySelector('[data-role="basedisp"]').textContent = fmt(base);
+      tr.querySelector('[data-role="total"]').textContent = fmt(base);
+      totalBase += base;
+      return;
+    }
+  });
+
+  const grandExclVat = totalBase + totalMarkup;
+  const vat = grandExclVat * 0.15;
+  const grandInclVat = grandExclVat + vat;
+
+  document.getElementById('sumBase').textContent = fmt(totalBase);
+  document.getElementById('sumMarkup').textContent = fmt(totalMarkup);
+  document.getElementById('sumTotal').textContent = fmt(grandExclVat);
+  document.getElementById('sumVat').textContent = fmt(vat);
+  document.getElementById('sumGrand').textContent = fmt(grandInclVat);
+}
+
+function applyBulkMarkup(){
+  const val = parseFloat(document.getElementById('bulkMarkup').value);
+  if(isNaN(val)) return;
+  document.querySelectorAll('tr [data-role="markup"]').forEach(inp=>{
+    inp.value = val;
+  });
+  recalc();
+}
+
+document.querySelectorAll('.sys-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> selectSize(btn.dataset.size, parseInt(btn.dataset.panels,10)));
+});
+
+buildRows();
+selectSize("5kW", 8);
+document.getElementById('custDate').valueAsDate = new Date();
+</script>
+
+</body>
+</html>
